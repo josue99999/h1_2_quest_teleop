@@ -39,3 +39,28 @@ def pin_q_to_mjcf_qpos(sol_q: np.ndarray, mj_model, current_qpos: np.ndarray, ar
     for i, qpos_adr in enumerate(arm_qpos_indices):
         qpos[qpos_adr] = sol_q[i]
     return qpos
+
+def _build_jnt_to_act_map(mj_model) -> dict:
+    jnt_to_act = {}
+    for i in range(mj_model.nu):
+        jnt_id = mj_model.actuator_trnid[i, 0]
+        jnt_name = mujoco.mj_id2name(mj_model, mujoco.mjtObj.mjOBJ_JOINT, jnt_id)
+        if jnt_name:
+            jnt_to_act[jnt_name] = i
+    return jnt_to_act
+
+def build_ctrl_indices_for_arm(mj_model) -> list:
+    jnt_to_act = _build_jnt_to_act_map(mj_model)
+    indices = []
+    for pin_name in PINOCCHIO_ARM_JOINT_NAMES:
+        mj_name = _get_mjcf_joint_name(pin_name)
+        if mj_name not in jnt_to_act:
+            raise KeyError(f'Actuator for arm joint {mj_name} (from {pin_name}) not found.')
+        indices.append(jnt_to_act[mj_name])
+    return indices
+
+def build_hand_ctrl_indices(mj_model) -> tuple:
+    jnt_to_act = _build_jnt_to_act_map(mj_model)
+    def get_indices(names):
+        return [jnt_to_act[n] for n in names if n in jnt_to_act]
+    return (get_indices(HAND_JOINT_NAMES_LEFT), get_indices(HAND_JOINT_NAMES_RIGHT))

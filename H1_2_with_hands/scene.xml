@@ -59,7 +59,8 @@
     <geom name="floor"
           type="plane"
           size="5 5 0.1"
-          material="ground_mat"/>
+          material="ground_mat"
+          contype="2" conaffinity="3"/>
 
     <!-- Referencia: origen del mundo MuJoCo (sistema de referencia global) -->
     <site name="ref_world_origin" pos="0 0 0" size="0.07" rgba="1 0 0 0.9"/>
@@ -72,16 +73,17 @@
     <body name="table" pos="0.45 0 0.475">
       <!-- Tablero -->
       <geom name="table_top" type="box" size="0.25 0.50 0.02"
-            pos="0 0 0.475" material="wood_mat" mass="20"/>
+            pos="0 0 0.475" material="wood_mat" mass="20"
+            contype="2" conaffinity="3" friction="0.8 0.5 0.01"/>
       <!-- 4 patas -->
       <geom name="table_leg_fl" type="box" size="0.025 0.025 0.475"
-            pos="0.22 0.45 0" material="wood_mat"/>
+            pos="0.22 0.45 0" material="wood_mat" contype="2" conaffinity="3"/>
       <geom name="table_leg_fr" type="box" size="0.025 0.025 0.475"
-            pos="0.22 -0.45 0" material="wood_mat"/>
+            pos="0.22 -0.45 0" material="wood_mat" contype="2" conaffinity="3"/>
       <geom name="table_leg_bl" type="box" size="0.025 0.025 0.475"
-            pos="-0.22 0.45 0" material="wood_mat"/>
+            pos="-0.22 0.45 0" material="wood_mat" contype="2" conaffinity="3"/>
       <geom name="table_leg_br" type="box" size="0.025 0.025 0.475"
-            pos="-0.22 -0.45 0" material="wood_mat"/>
+            pos="-0.22 -0.45 0" material="wood_mat" contype="2" conaffinity="3"/>
     </body>
 
     <!-- ══════════════════════════════════════════════════════════════════════
@@ -93,10 +95,12 @@
     <body name="cup" pos="0.40 0.20 0.995">
       <freejoint name="cup_joint"/>
       <geom name="cup_body" type="cylinder" size="0.035 0.045"
-            rgba="0.95 0.95 0.9 1" mass="0.12" friction="1 0.5 0.01"/>
+            rgba="0.95 0.95 0.9 1" mass="0.12" friction="1 0.5 0.01"
+            contype="2" conaffinity="3"/>
       <!-- Fondo del vaso -->
       <geom name="cup_base" type="cylinder" size="0.033 0.003"
-            pos="0 0 -0.042" rgba="0.9 0.9 0.85 1"/>
+            pos="0 0 -0.042" rgba="0.9 0.9 0.85 1"
+            contype="2" conaffinity="3"/>
     </body>
 
     <!-- 🫖 Tetera (cuerpo esférico + pico cilíndrico + tapa) -->
@@ -104,49 +108,58 @@
       <freejoint name="teapot_joint"/>
       <!-- Cuerpo de la tetera -->
       <geom name="teapot_body" type="sphere" size="0.05"
-            rgba="0.2 0.45 0.7 1" mass="0.25" friction="1 0.5 0.01"/>
+            rgba="0.2 0.45 0.7 1" mass="0.25" friction="1 0.5 0.01"
+            contype="2" conaffinity="3"/>
       <!-- Tapa -->
       <geom name="teapot_lid" type="cylinder" size="0.025 0.008"
-            pos="0 0 0.05" rgba="0.2 0.45 0.7 1"/>
+            pos="0 0 0.05" rgba="0.2 0.45 0.7 1"
+            contype="2" conaffinity="3"/>
       <geom name="teapot_knob" type="sphere" size="0.008"
-            pos="0 0 0.062" rgba="0.15 0.35 0.6 1"/>
+            pos="0 0 0.062" rgba="0.15 0.35 0.6 1"
+            contype="2" conaffinity="3"/>
       <!-- Pico (cilindro inclinado) -->
       <geom name="teapot_spout" type="cylinder" size="0.012 0.04"
-            pos="0.06 0 0.02" euler="0 50 0" rgba="0.2 0.45 0.7 1"/>
+            pos="0.06 0 0.02" euler="0 50 0" rgba="0.2 0.45 0.7 1"
+            contype="2" conaffinity="3"/>
       <!-- Asa -->
       <geom name="teapot_handle" type="cylinder" size="0.008 0.03"
-            pos="-0.06 0 0.02" euler="0 -40 0" rgba="0.2 0.45 0.7 1"/>
+            pos="-0.06 0 0.02" euler="0 -40 0" rgba="0.2 0.45 0.7 1"
+            contype="2" conaffinity="3"/>
     </body>
 
     <!-- 🍽️ Plato (cilindro plano) -->
     <body name="plate" pos="0.50 0.0 0.975">
       <freejoint name="plate_joint"/>
       <geom name="plate_geom" type="cylinder" size="0.07 0.005"
-            rgba="0.98 0.98 0.95 1" mass="0.15" friction="1 0.5 0.01"/>
+            rgba="0.98 0.98 0.95 1" mass="0.15" friction="1 0.5 0.01"
+            contype="2" conaffinity="3"/>
     </body>
 
     <!-- 🥣 Bowl / cuenco (esfera cortada: semi-esfera + base) -->
     <body name="bowl" pos="0.35 0.0 0.995">
       <freejoint name="bowl_joint"/>
       <geom name="bowl_body" type="sphere" size="0.045"
-            rgba="0.85 0.35 0.2 1" mass="0.10" friction="1 0.5 0.01"/>
+            rgba="0.85 0.35 0.2 1" mass="0.10" friction="1 0.5 0.01"
+            contype="2" conaffinity="3"/>
       <geom name="bowl_base" type="cylinder" size="0.025 0.003"
-            pos="0 0 -0.042" rgba="0.75 0.3 0.15 1"/>
+            pos="0 0 -0.042" rgba="0.75 0.3 0.15 1"
+            contype="2" conaffinity="3"/>
     </body>
 
     <!-- 🧊 Cubo pequeño (para apilar) -->
     <body name="cube_red" pos="0.50 0.25 0.995">
       <freejoint name="cube_red_joint"/>
       <geom name="cube_red_geom" type="box" size="0.025 0.025 0.025"
-            material="cube_red" mass="0.05" friction="1 0.5 0.01"/>
+            material="cube_red" mass="0.05" friction="1 0.5 0.01"
+            contype="2" conaffinity="3"/>
     </body>
 
     <!-- Setpoints del IK (mocap: no les afecta la gravedad) -->
     <body name="target_left_viz" mocap="true" pos="0 0 0">
-      <geom name="target_left_geom" type="sphere" size="0.04" rgba="0 0.8 0 0.8"/>
+      <geom name="target_left_geom" type="sphere" size="0.04" rgba="0 0.8 0 0.8" contype="0" conaffinity="0"/>
     </body>
     <body name="target_right_viz" mocap="true" pos="0 0 0">
-      <geom name="target_right_geom" type="sphere" size="0.04" rgba="0 0 1 0.8"/>
+      <geom name="target_right_geom" type="sphere" size="0.04" rgba="0 0 1 0.8" contype="0" conaffinity="0"/>
     </body>
 
   </worldbody>

@@ -20,7 +20,7 @@ REPO_ROOT = SCRIPT_DIR
 for p in (REPO_ROOT, SCRIPT_DIR):
     if p not in sys.path:
         sys.path.insert(0, p)
-from joint_mapping_h1_2 import build_qpos_indices_for_arm, build_hand_qpos_indices, pin_q_to_mjcf_qpos
+from joint_mapping_h1_2 import build_qpos_indices_for_arm, build_hand_qpos_indices, pin_q_to_mjcf_qpos, build_ctrl_indices_for_arm, build_hand_ctrl_indices
 H1_2_URDF_PATH = os.path.join(REPO_ROOT, 'assets', 'h1_2', 'h1_2.urdf')
 H1_2_ASSETS_DIR = os.path.join(REPO_ROOT, 'assets', 'h1_2')
 JOINTS_TO_LOCK = ['left_hip_yaw_joint', 'left_hip_pitch_joint', 'left_hip_roll_joint', 'left_knee_joint', 'left_ankle_pitch_joint', 'left_ankle_roll_joint', 'right_hip_yaw_joint', 'right_hip_pitch_joint', 'right_hip_roll_joint', 'right_knee_joint', 'right_ankle_pitch_joint', 'right_ankle_roll_joint', 'torso_joint', 'L_index_proximal_joint', 'L_index_intermediate_joint', 'L_middle_proximal_joint', 'L_middle_intermediate_joint', 'L_pinky_proximal_joint', 'L_pinky_intermediate_joint', 'L_ring_proximal_joint', 'L_ring_intermediate_joint', 'L_thumb_proximal_yaw_joint', 'L_thumb_proximal_pitch_joint', 'L_thumb_intermediate_joint', 'L_thumb_distal_joint', 'R_index_proximal_joint', 'R_index_intermediate_joint', 'R_middle_proximal_joint', 'R_middle_intermediate_joint', 'R_pinky_proximal_joint', 'R_pinky_intermediate_joint', 'R_ring_proximal_joint', 'R_ring_intermediate_joint', 'R_thumb_proximal_yaw_joint', 'R_thumb_proximal_pitch_joint', 'R_thumb_intermediate_joint', 'R_thumb_distal_joint']
@@ -345,6 +345,16 @@ class MuJoCoNode:
         self.data = mujoco.MjData(self.model)
         self._arm_indices = build_qpos_indices_for_arm(self.model)
         self._hand_left_indices, self._hand_right_indices = build_hand_qpos_indices(self.model)
+        self._arm_ctrl_indices = build_ctrl_indices_for_arm(self.model)
+        self._hand_left_ctrl, self._hand_right_ctrl = build_hand_ctrl_indices(self.model)
+        for i in range(self.model.nu):
+            jnt_id = self.model.actuator_trnid[i, 0]
+            self.data.ctrl[i] = self.data.qpos[self.model.jnt_qposadr[jnt_id]]
+        fj_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_JOINT, 'floating_base_joint')
+        self._fj_qposadr = self.model.jnt_qposadr[fj_id]
+        self._fj_dofadr = self.model.jnt_dofadr[fj_id]
+        self._fj_init_pos = self.data.qpos[self._fj_qposadr:self._fj_qposadr + 3].copy()
+        self._fj_init_quat = self.data.qpos[self._fj_qposadr + 3:self._fj_qposadr + 7].copy()
         self._viz_left_mocapid = self._viz_right_mocapid = None
         try:
             bid_l = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, 'target_left_viz')
@@ -355,20 +365,21 @@ class MuJoCoNode:
                 print(f'[MUJOCO] Viz mocap IDs: L={self._viz_left_mocapid} R={self._viz_right_mocapid}')
         except Exception:
             pass
-        print(f'[MUJOCO] Listo — nq={self.model.nq}  arm={len(self._arm_indices)}')
+        print(f'[MUJOCO] Listo — nq={self.model.nq}  nu={self.model.nu}  arm_ctrl={len(self._arm_ctrl_indices)}')
 
     def apply_arm(self, sol_q: np.ndarray):
-        self.data.qpos[:] = pin_q_to_mjcf_qpos(sol_q, self.model, self.data.qpos, self._arm_indices)
+        for i, ctrl_idx in enumerate(self._arm_ctrl_indices):
+            self.data.ctrl[ctrl_idx] = sol_q[i]
 
     def apply_hands(self, left_q12: Optional[np.ndarray], right_q12: Optional[np.ndarray]):
         if left_q12 is None or right_q12 is None:
             return
-        for i, adr in enumerate(self._hand_left_indices):
+        for i, ctrl_idx in enumerate(self._hand_left_ctrl):
             if i < len(left_q12):
-                self.data.qpos[adr] = left_q12[i]
-        for i, adr in enumerate(self._hand_right_indices):
+                self.data.ctrl[ctrl_idx] = left_q12[i]
+        for i, ctrl_idx in enumerate(self._hand_right_ctrl):
             if i < len(right_q12):
-                self.data.qpos[adr] = right_q12[i]
+                self.data.ctrl[ctrl_idx] = right_q12[i]
 
     def update_target_viz(self, left_pos: np.ndarray, right_pos: np.ndarray):
         if self._viz_left_mocapid is None or self._viz_left_mocapid < 0:
@@ -376,8 +387,15 @@ class MuJoCoNode:
         self.data.mocap_pos[self._viz_left_mocapid] = left_pos
         self.data.mocap_pos[self._viz_right_mocapid] = right_pos
 
-    def step(self):
-        mujoco.mj_step(self.model, self.data)
+    def step(self, dt: float):
+        n_substeps = max(1, int(np.round(dt / self.model.opt.timestep)))
+        qa = self._fj_qposadr
+        da = self._fj_dofadr
+        for _ in range(n_substeps):
+            self.data.qpos[qa:qa + 3] = self._fj_init_pos
+            self.data.qpos[qa + 3:qa + 7] = self._fj_init_quat
+            self.data.qvel[da:da + 6] = 0.0
+            mujoco.mj_step(self.model, self.data)
 
 class Coordinator:
 
@@ -402,8 +420,7 @@ class Coordinator:
         left_q12, right_q12 = self.hand.update(self.dt)
         self.sim.apply_hands(left_q12, right_q12)
         self.sim.update_target_viz(self.arm.left_pos_world, self.arm.right_pos_world)
-        mujoco.mj_forward(self.sim.model, self.sim.data)
-        self.sim.data.qvel[:] = 0.0
+        self.sim.step(self.dt)
         with mujoco.viewer.launch_passive(self.sim.model, self.sim.data) as viewer:
             viewer.cam.lookat[:] = [0.0, 0.0, 1.0]
             viewer.cam.distance = 2.5
@@ -437,7 +454,7 @@ class Coordinator:
                 left_q12, right_q12 = self.hand.update(self.dt)
                 self.sim.apply_hands(left_q12, right_q12)
                 self.sim.update_target_viz(self.arm.left_pos_world, self.arm.right_pos_world)
-                mujoco.mj_forward(self.sim.model, self.sim.data)
+                self.sim.step(self.dt)
                 viewer.sync()
                 if int(now * 10) % 10 == 0 and (not hasattr(self, '_last_print')) or getattr(self, '_last_print', 0) != int(now):
                     self._last_print = int(now)
