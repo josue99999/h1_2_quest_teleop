@@ -2,6 +2,9 @@
 
 This repository provides a standalone MuJoCo teleoperation environment for the Unitree H1_2 robot using Meta Quest 3 tracking. It employs a whole-body differential Inverse Kinematics (IK) solver named `PinkBodyIKSolver` (based on [pink](https://github.com/stephane-caron/pink) and Pinocchio).
 
+
+![Teleoperation demo](teleop_h1.gif)
+
 ## Capabilities
 
 - **VR Tracking**: Uses Meta Quest 3 controllers for full SE(3) end-effector tracking (position and orientation) via `meta_quest_teleop`.
