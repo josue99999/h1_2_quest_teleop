@@ -117,17 +117,17 @@ This keeps the torso stable so the operator can focus entirely on arm and hand t
 
 ---
 
-## Top 3 Hardest Problems Solved
+## Top Problems Solved
 
-### Problem 1 — IK Instability Near Arm Singularities
+### Problem  — IK Instability Near Arm Singularities
 
 When the arm is fully extended or in certain configurations, the math behind IK breaks down — the solver produces extremely large joint velocity commands that cause the simulation to explode. This is called a kinematic singularity and is a well-known problem in robot control. I solved it by tuning the Levenberg-Marquardt damping parameter, which adds a small penalty that prevents the solver from producing extreme outputs near these problem configurations. I also added hard joint velocity clipping as a second safety layer, and adjusted the robot's home pose so the operator's natural working range stays away from singular configurations. The result is smooth, stable tracking across the full practical arm workspace.
 
-### Problem 2 — Quest-to-Robot Coordinate Frame Alignment
+### Problem  — Quest-to-Robot Coordinate Frame Alignment
 
 The Meta Quest headset measures hand positions in its own coordinate system, which has a different axis layout and handedness than the robot's control frame. This means a raw mapping makes the robot's arm move in completely wrong directions — left feels like up, forward feels like sideways. Fixing this required testing each individual axis of movement separately, observing what the robot did, and deducing the exact permutation and sign flip needed for correct alignment. I also built a standalone 3D visualization tool (`validate_quest_h1_2.py`) that shows the remapped poses in real time so the alignment can be verified before launching the full simulation. The result is intuitive one-to-one correspondence between the operator's hand motion and the robot's arm motion.
 
-### Problem 3 — Natural Hand Closing Across 12 Finger Joints
+### Problem  — Natural Hand Closing Across 12 Finger Joints
 
 The Inspire robotic hands have 12 joints per hand, but controlling all of them independently from a single analog grip value is complex — a naive uniform approach makes fingers close at unnatural rates and produces unrealistic grasps. Real underactuated robotic hands have mechanical coupling between proximal and distal finger joints that must be respected. I implemented a 6-DOF representative control space and derived fixed expansion ratios (distal = 0.65 × proximal) from the hand's mechanical design, applied with a smooth first-order filter to avoid velocity spikes. The result is natural-looking grasp motion that closely matches how the physical Inspire hand closes, making the simulation directly applicable to real hardware deployment.
 
